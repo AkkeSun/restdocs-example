@@ -1,0 +1,72 @@
+// 참고 : https://velog.io/@chaerim1001/Spring-Rest-Docs-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0-AsciiDoc-%EB%AC%B8%EB%B2%95
+// 참고 : https://hudi.blog/spring-rest-docs/
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.3'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.asciidoctor.jvm.convert' version '3.3.2' // 이거 추가
+}
+
+group = 'com.restdocs'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '21'
+}
+
+configurations {
+    asciidoctorExt // 이거 추가
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    asciidoctorExt 'org.springframework.restdocs:spring-restdocs-asciidoctor' // 이거 추가
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc' // 이거 추가
+
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.19.0' // resource.json 을 만들어준다
+}
+
+ext {
+    set('snippetsDir', file("build/generated-snippets")) // 이거 추가
+}
+
+tasks.named('test') {
+    outputs.dir snippetsDir // 이거 추가
+    useJUnitPlatform()
+}
+
+asciidoctor {
+    configurations 'asciidoctorExt' // 이거 추가
+    baseDirFollowsSourceFile() // 이거 추가
+    inputs.dir snippetsDir // 이거 추가
+    dependsOn test // 이거 추가
+}
+
+asciidoctor.doFirst {
+    delete file('src/main/resources/static/docs')  // 이거 추가
+}
+
+task copyDocument(type: Copy) { // 이거 추가
+    dependsOn asciidoctor
+    from file("build/docs/asciidoc")
+    into file("src/main/resources/static/docs")
+}
+
+tasks.named('asciidoctor') {
+    inputs.dir snippetsDir
+    dependsOn test
+}
